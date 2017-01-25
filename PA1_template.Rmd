@@ -7,19 +7,135 @@ output:
 
 
 ## Loading and preprocessing the data
+```{r}
+data1<-read.csv("activity.csv")
+```
 
-
+Examine the data:
+```{r}
+str(data1)
+```
 
 ## What is mean total number of steps taken per day?
+Load the dplyr and ggplot2 packages. 
+```{r}
+library(dplyr)
+library(ggplot2)
+```
 
+Calculate the total number of steps per day.  
+```{r}
+total_per_day <- data1 %>% group_by(date) %>% summarise(total_steps = sum(steps,na.rm=TRUE))
+```
+
+Create a histogram of the total number of steps per day.  
+```{r echo=FALSE}
+hist(total_per_day$total_steps,breaks = 20,xlab="total steps per day",main="Distribution of total steps per day")
+```
+
+Calculate the average total number of steps per day.  
+```{r}
+mean(total_per_day$total_steps, na.rm=TRUE)
+```
+
+Calculate the median total number of steps per day.  
+```{r}
+median(total_per_day$total_steps, na.rm=TRUE)
+```
 
 
 ## What is the average daily activity pattern?
+Calculate the average number of steps per interval, per day (across all days) and store the result in 'avg_across_days'.
+```{r}
+data1$interval<-as.factor(data1$interval)
+avg_across_days <- data1 %>% group_by(interval) %>% summarise(avg_steps = mean(steps,na.rm=TRUE))
+```
 
+Plot the the average number of steps vs interval, across days.
+```{r}
+# get number of days in data set
+days<-unique(as.character(data1$date))
+num_days<-as.character(length(days))
+
+# get the maximum interval in the data set and specify the x tick marks
+max_interval<-max(unique(as.numeric(as.character(data1$interval))))
+x_ticks<-seq(0,max_interval,by=300)
+avg_across_days$interval<-as.numeric(as.character(avg_across_days$interval))
+
+# plot
+g<-ggplot(avg_across_days,aes(x=interval,y=avg_steps))
+g2<-g + geom_line(color="blue",group=1) + theme_bw() + labs(title=paste("Average steps per interval per day, over", num_days, "days")) + xlab("intervals (min)") + ylab("average number of steps") + theme(plot.title = element_text(hjust = 0.5))
+g2 + scale_x_discrete(breaks=x_ticks) 
+```
+
+Find and display the 5 minute interval (in minutes) with the maximum number of steps.
+```{r}
+ind<-which(avg_across_days$avg_steps==max(avg_across_days$avg_steps))
+as.numeric(as.character(avg_across_days[ind,1]))
+```
 
 
 ## Imputing missing values
+Get the number of rows that have Na in the step column.
+```{r}
+sum(is.na(data1$steps))
+```
 
+Fill in missing values with mean values for that interval.
+```{r}
+ind<-which(is.na(data1$steps))
+data2 <- data1
+for (i in 1:length(ind)) {
+        int<-as.numeric(as.character(data2[ind[i],3]))
+        ind2<-which(avg_across_days$interval==int)
+        data2[ind[i],1]<-avg_across_days[ind2,2]
+}
+```
+
+Examine the data.
+```{r}
+str(data2)
+```
+
+Calculate the total number of steps per day with the imputed values.  
+```{r}
+total_per_day <- data2 %>% group_by(date) %>% summarise(total_steps = sum(steps,na.rm=TRUE))
+```
+
+Create a histogram of the total number of steps per day.  
+```{r echo=FALSE}
+hist(total_per_day$total_steps,breaks = 20,xlab="total steps per day",main="Distribution of total steps per day, with imputed values")
+```
+
+Calculate the average total number of steps per day with the imputed values.    
+```{r}
+mean(total_per_day$total_steps, na.rm=TRUE)
+```
+
+Calculate the median total number of steps per day with the imputed values.  
+```{r}
+median(total_per_day$total_steps, na.rm=TRUE)
+```
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+Add a column to identify each day as either a weekend or weekday, using the data set with imputed values.
+```{r}
+data2$date<-strptime(data2$date,"%Y-%m-%d")
+data2$weekday<-as.factor(weekdays(data2$date))
+levels(data2$weekday)<-c("weekdays","weekdays","weekend","weekend","weekdays","weekdays","weekdays")
+data2$date<-as.character(data2$date)
+```
+
+Calculate the average number of steps per interval, for weekends and weekdays. Store the result in 'avg_across_wdays'.
+```{r}
+avg_across_wdays <- data2 %>% group_by(interval,weekday) %>% summarise(avg_steps = mean(steps,na.rm=TRUE))
+```
+
+Plot the activity pattern for weekends and weekdays.
+```{r}
+g<-ggplot(avg_across_wdays,aes(x=interval,y=avg_steps))
+g2 <- g + geom_line(color="blue",group=1) + facet_wrap(~weekday,ncol=1) + scale_x_discrete(breaks=x_ticks) + theme_bw() +theme(strip.text.x = element_text(size=10, face="bold", angle=0),strip.background = element_rect(colour="black", fill="#fee3b3"))
+g2 +labs(title=paste("Average steps per interval for weekdays and weekend")) + xlab("intervals (min)") + ylab("average number of steps") + theme(plot.title = element_text(hjust = 0.5))
+```
