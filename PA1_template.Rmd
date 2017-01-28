@@ -29,7 +29,7 @@ total_per_day <- data1 %>% group_by(date) %>% summarise(total_steps = sum(steps,
 ```
 
 Create a histogram of the total number of steps per day.  
-```{r echo=FALSE}
+```{r}
 hist(total_per_day$total_steps,breaks = 20,xlab="total steps per day",main="Distribution of total steps per day")
 ```
 
@@ -103,7 +103,7 @@ total_per_day <- data2 %>% group_by(date) %>% summarise(total_steps = sum(steps,
 ```
 
 Create a histogram of the total number of steps per day.  
-```{r echo=FALSE}
+```{r}
 hist(total_per_day$total_steps,breaks = 20,xlab="total steps per day",main="Distribution of total steps per day, with imputed values")
 ```
 
@@ -124,8 +124,13 @@ Add a column to identify each day as either a weekend or weekday, using the data
 ```{r}
 data2$date<-strptime(data2$date,"%Y-%m-%d")
 data2$weekday<-as.factor(weekdays(data2$date))
-levels(data2$weekday)<-c("weekdays","weekdays","weekend","weekend","weekdays","weekdays","weekdays")
+levels(data2$weekday)<-c("weekday","weekday","weekend","weekend","weekday","weekday","weekday")
 data2$date<-as.character(data2$date)
+```
+
+Examine the data.
+```{r}
+str(data2)
 ```
 
 Calculate the average number of steps per interval, for weekends and weekdays. Store the result in 'avg_across_wdays'.
